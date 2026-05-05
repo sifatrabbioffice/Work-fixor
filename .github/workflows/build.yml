@@ -1,0 +1,88 @@
+name: WinHub Ultimate Build (Resolved Syntax)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build IPA
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Generate Plist and Project
+        run: |
+          mkdir -p WinHub
+          
+          # Info.plist তৈরি (সংশোধিত ও নিখুঁত XML)
+          cat <<'EOF' > WinHub/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleIdentifier</key>
+            <string>com.winhub.emulator.promax</string>
+            <key>CFBundleName</key>
+            <string>WinHub</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0</string>
+            <key>CFBundleVersion</key>
+            <string>1</string>
+            <key>LSRequiresIPhoneOS</key>
+            <true/>
+            <key>UIFileSharingEnabled</key>
+            <true/>
+            <key>LSSupportsOpeningDocumentsInPlace</key>
+            <true/>
+            <key>UILaunchStoryboardName</key>
+            <string>LaunchScreen</string>
+            <key>UISupportedInterfaceOrientations</key>
+            <array>
+              <string>UIInterfaceOrientationLandscapeLeft</string>
+              <string>UIInterfaceOrientationLandscapeRight</string>
+            </array>
+          </dict>
+          </plist>
+          EOF
+
+          # LaunchScreen ও প্রজেক্ট তৈরি
+          echo "import UIKit\nclass LaunchScreen: UIViewController {}" > WinHub/LaunchScreen.swift
+          xcodegen generate
+
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project WinHub.xcodeproj \
+            -scheme WinHub \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/WinHub.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Export IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/WinHub.xcarchive/Products/Applications/*.app build/Payload/
+          cd build
+          zip -qr WinHub_Final_Build.ipa Payload
+
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinHub-IPA
+          path: build/WinHub_Final_Build.ipa
