@@ -1,4 +1,4 @@
-name: WinHub Ultimate Build (Final Fix)
+name: WinHub Production Build (Final Version)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build IPA (Node 24)
+    name: Build IPA
     runs-on: macos-latest
     steps:
       - name: Checkout Code
@@ -21,11 +21,11 @@ jobs:
         with:
           node-version: '24'
 
-            - name: Create Structure and Plist
+      - name: Generate Source Files and Plist
         run: |
           mkdir -p WinHub
           
-          # Info.plist তৈরি
+          # ১. Info.plist তৈরি (সংশোধিত সিনট্যাক্স)
           cat <<'EOF' > WinHub/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -58,15 +58,96 @@ jobs:
           </plist>
           EOF
 
-          # সংশোধিত LaunchScreen.swift তৈরির কমান্ড (নিচে দেখুন)
+          # ২. LaunchScreen.swift তৈরি (এরর সমাধান: লাইন ব্রেক ঠিক করা হয়েছে)
           cat <<'EOF' > WinHub/LaunchScreen.swift
           import UIKit
           class LaunchScreen: UIViewController {}
           EOF
-          
-          # প্রোজেক্ট জেনারেশন
-          xcodegen generate
 
+          # ৩. App.swift (মেইন সোর্স কোড) তৈরি
+          cat <<'EOF' > WinHub/App.swift
+          import SwiftUI
+          import UniformTypeIdentifiers
+
+          @main
+          struct WinHubApp: App {
+              var body: some Scene {
+                  WindowGroup {
+                      MainView()
+                  }
+              }
+          }
+
+          struct MainView: View {
+              @State private var isEmulating = false
+              @State private var selectedFile = "No File Loaded"
+              @State private var showPicker = false
+              
+              var body: some View {
+                  ZStack {
+                      Color.black.ignoresSafeArea()
+                      if isEmulating {
+                          EmulationView(fileName: selectedFile) { isEmulating = false }
+                      } else {
+                          VStack(spacing: 40) {
+                              Text("WINHUB").font(.system(size: 50, weight: .black)).foregroundColor(.blue)
+                              Text("Target: iPhone 15 Pro Max").foregroundColor(.gray)
+                              
+                              VStack(spacing: 15) {
+                                  Button(action: { showPicker = true }) {
+                                      Label("Import Environment", systemImage: "plus.rectangle.on.folder")
+                                          .frame(width: 250).padding().background(Color.blue).cornerRadius(15)
+                                  }
+                                  
+                                  if selectedFile != "No File Loaded" {
+                                      Button(action: { isEmulating = true }) {
+                                          Text("Boot System").frame(width: 250).padding().background(Color.green).cornerRadius(15)
+                                      }
+                                  }
+                              }
+                              .foregroundColor(.white).font(.headline)
+                          }
+                      }
+                  }
+                  .fileImporter(isPresented: $showPicker, allowedContentTypes: [.item]) { res in
+                      if let url = try? res.get() { selectedFile = url.lastPathComponent }
+                  }
+              }
+          }
+
+          struct EmulationView: View {
+              let fileName: String
+              var onExit: () -> Void
+              var body: some View {
+                  ZStack {
+                      Color(white: 0.1).ignoresSafeArea()
+                      VStack {
+                          HStack {
+                              Button(action: onExit) { Image(systemName: "power").foregroundColor(.red).font(.title) }.padding()
+                              Spacer()
+                              Text(fileName).foregroundColor(.white.opacity(0.3)).padding()
+                          }
+                          Spacer()
+                          HStack {
+                              Circle().fill(.white.opacity(0.1)).frame(width: 140, height: 140) // Joystick Placeholder
+                              Spacer()
+                              VStack(spacing: 20) {
+                                  Circle().fill(.yellow.opacity(0.8)).frame(width: 70, height: 70).overlay(Text("Y"))
+                                  HStack(spacing: 20) {
+                                      Circle().fill(.blue.opacity(0.8)).frame(width: 70, height: 70).overlay(Text("X"))
+                                      Circle().fill(.red.opacity(0.8)).frame(width: 70, height: 70).overlay(Text("B"))
+                                  }
+                                  Circle().fill(.green.opacity(0.8)).frame(width: 70, height: 70).overlay(Text("A"))
+                              }.foregroundColor(.white).bold()
+                          }.padding(.horizontal, 60).padding(.bottom, 40)
+                      }
+                  }
+              }
+          }
+          EOF
+
+          # ৪. প্রোজেক্ট জেনারেট করা
+          xcodegen generate
 
       - name: Build Archive
         run: |
@@ -85,10 +166,10 @@ jobs:
           mkdir -p build/Payload
           cp -r build/WinHub.xcarchive/Products/Applications/*.app build/Payload/
           cd build
-          zip -qr WinHub_Final_Sideload.ipa Payload
+          zip -qr WinHub_Final.ipa Payload
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WinHub-IPA
-          path: build/WinHub_Final_Sideload.ipa
+          name: WinHub-App-Package
+          path: build/WinHub_Final.ipa
