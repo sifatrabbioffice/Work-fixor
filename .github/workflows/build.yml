@@ -1,4 +1,4 @@
-name: WinHub Ultimate Build (Resolved Syntax)
+name: WinHub Ultimate Build (Final Fix)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build IPA
+    name: Build IPA (Node 24)
     runs-on: macos-latest
     steps:
       - name: Checkout Code
@@ -21,11 +21,11 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Generate Plist and Project
+      - name: Create Structure and Plist
         run: |
           mkdir -p WinHub
           
-          # Info.plist তৈরি (সংশোধিত ও নিখুঁত XML)
+          # Info.plist তৈরি (একদম নিখুঁত XML সিনট্যাক্স)
           cat <<'EOF' > WinHub/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -58,8 +58,10 @@ jobs:
           </plist>
           EOF
 
-          # LaunchScreen ও প্রজেক্ট তৈরি
+          # ডামি লঞ্চ স্ক্রিন তৈরি
           echo "import UIKit\nclass LaunchScreen: UIViewController {}" > WinHub/LaunchScreen.swift
+          
+          # প্রোজেক্ট জেনারেশন
           xcodegen generate
 
       - name: Build Archive
@@ -79,10 +81,10 @@ jobs:
           mkdir -p build/Payload
           cp -r build/WinHub.xcarchive/Products/Applications/*.app build/Payload/
           cd build
-          zip -qr WinHub_Final_Build.ipa Payload
+          zip -qr WinHub_Final_Sideload.ipa Payload
 
-      - name: Upload Result
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: WinHub-IPA
-          path: build/WinHub_Final_Build.ipa
+          path: build/WinHub_Final_Sideload.ipa
