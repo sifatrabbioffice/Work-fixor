@@ -1,0 +1,19 @@
+name: WinHub
+options:
+  bundleIdPrefix: com.winhub.emulator
+targets:
+  WinHub:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources: [WinHub]
+    settings:
+      base:
+        INFOPLIST_FILE: WinHub/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.winhub.emulator.promax
+        MARKETING_VERSION: 1.0
+        CURRENT_PROJECT_VERSION: 1
+        TARGETED_DEVICE_FAMILY: 1
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UILaunchStoryboardName: LaunchScreen
