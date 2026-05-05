@@ -21,11 +21,11 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Create Structure and Plist
+            - name: Create Structure and Plist
         run: |
           mkdir -p WinHub
           
-          # Info.plist তৈরি (একদম নিখুঁত XML সিনট্যাক্স)
+          # Info.plist তৈরি
           cat <<'EOF' > WinHub/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -58,11 +58,15 @@ jobs:
           </plist>
           EOF
 
-          # ডামি লঞ্চ স্ক্রিন তৈরি
-          echo "import UIKit\nclass LaunchScreen: UIViewController {}" > WinHub/LaunchScreen.swift
+          # সংশোধিত LaunchScreen.swift তৈরির কমান্ড (নিচে দেখুন)
+          cat <<'EOF' > WinHub/LaunchScreen.swift
+          import UIKit
+          class LaunchScreen: UIViewController {}
+          EOF
           
           # প্রোজেক্ট জেনারেশন
           xcodegen generate
+
 
       - name: Build Archive
         run: |
